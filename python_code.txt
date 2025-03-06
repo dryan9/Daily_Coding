@@ -1,0 +1,346 @@
+# Write a query that returns the number of unique users per client per month
+
+result = (
+    fact_events.groupby(
+        [fact_events["client_id"], fact_events["time_id"].dt.month]
+    )["user_id"]
+    .nunique()
+    .reset_index()
+)
+-------------------------------------------------------------------------------------
+# Start writing code
+amazon_shipment["year_month"] = pd.to_datetime(
+    amazon_shipment.shipment_date).dt.to_period("M")
+
+amazon_shipment["unique_key"] = (
+    amazon_shipment["shipment_id"].astype(str) +
+    "_" +
+    amazon_shipment["sub_id"].astype(str)
+    )
+    
+#print(amazon_shipment)
+
+result = (amazon_shipment.groupby("year_month")["unique_key"].nunique().to_frame("count").reset_index())
+print(result)
+
+-------------------------------------------------------------------------------------
+# Find all posts which were reacted to with a heart. For such posts output all columns from facebook_posts table. 
+
+#facebook_reactions.head()
+
+facebook_reactions['ind'] = np.where(facebook_reactions['reaction'] == 'heart', 1,0)
+
+result = facebook_reactions[facebook_reactions['ind'] == 1]
+
+#merged_df = df1.merge(df2, on='ID')
+merged_result = result.merge(facebook_posts, on = ['post_id', 'poster'], how = 'left')
+
+#print(merged_result.columns)
+merged_results_good = merged_result[['post_id', 'poster', 'post_text', 'post_keywords','post_date']]
+
+merged_results_good = merged_results_good.drop_duplicates(subset = 'poster')
+merged_results_good
+
+I want a job I wake up every morning and look forward to going to.
+
+I identify 3 reasons
+
+1) confidence in ability to do the job
+2) good work culture and a system of support
+3) ability to grow and develop my skills
+-------------------------------------------------------------------------------------
+# You have been asked to find the 5 most lucrative products in terms of total revenue for the first half of 2022 (from January to June inclusive)
+
+#create revenue per product
+online_orders["revenue"] = online_orders['units_sold'] *online_orders['cost_in_dollars']  
+
+#adding month column
+online_orders['month'] = online_orders['date'].dt.month
+
+#filtering by month column
+online_orders1 = online_orders[online_orders['month'] < 7]
+
+#online_orders1
+result = online_orders1.groupby('product_id', as_index = False)['revenue'].sum().sort_values('revenue', ascending = False).head(5)
+
+result
+
+-------------------------------------------------------------------------------------
+#Find the average number of bathrooms and bedrooms for each city’s property types. 
+#Output the result along with the city name and the property type
+
+#bathroom average
+airbnb_search_details['bathroom_avg'] = airbnb_search_details.groupby(['city', 'property_type'])['bathrooms'].transform('mean')
+
+#bedroom average
+airbnb_search_details['bedroom_avg'] = airbnb_search_details.groupby(['city', 'property_type'])['bedrooms'].transform('mean')
+
+
+result = airbnb_search_details[['city', 'property_type', 'bathroom_avg', 'bedroom_avg']].drop_duplicates()
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+result = airbnb_search_details.groupby(['city', 'property_type']).agg(
+    bathroom_avg=('bathrooms', 'mean'),
+    bedroom_avg=('bedrooms', 'mean')
+).reset_index()
+
+-------------------------------------------------------------------------------------
+#Count the number of user events performed by MacBookPro users.
+#Output the result along with the event name.
+#Sort the result based on the event count in the descending order.
+
+#filtering to macbook users, and getting count per event name
+results = playbook_events[playbook_events['device'] == 'macbook pro'].groupby('event_name').agg(
+		event_count = ('event_name', 'count')).reset_index()
+		.sort_values('event_count', ascending = False)
+
+-------------------------------------------------------------------------------------
+#Find the most profitable company from the financial sector. 
+#Output the result along with the continent.
+
+result = forbes_global_2010_2014[forbes_global_2010_2014['sector'] == 'Financials']
+									.nlargest(1, 'profits')[['company', 'continent']]
+
+-------------------------------------------------------------------------------------
+#Find the inspection date and risk category (pe_description) of facilities named 'STREET CHURROS' that received a score below 95.
+
+result = los_angeles_restaurant_health_inspections[los_angeles_restaurant_health_inspections['facility_name'] == 'STREET CHURROS'][['activity_date','pe_description']]
+
+-------------------------------------------------------------------------------------
+#You are given a dataset of health inspections that includes details about violations. Each row represents an inspection, 
+#and if an inspection resulted in a violation, the violation_id column will contain a value.
+#Count the total number of violations that occurred at 'Roxanne Cafe' for each year, 
+#based on the inspection date. Output the year and the corresponding number of violations in ascending order of the year.
+
+sf_restaurant_health_violations['year'] = sf_restaurant_health_violations['inspection_date'].dt.year
+
+results = sf_restaurant_health_violations[sf_restaurant_health_violations['business_name'] == 'Roxanne Cafe'].groupby(
+			'year', as_index = False)['business_name'].count()
+-------------------------------------------------------------------------------------
+#Find the number of employees working in the Admin department that joined in April or later.
+
+worker['month'] = worker['joining_date'].dt.month
+
+result = worker[(worker['department'] == 'Admin') & (worker['month'] > 3)].groupby('department')['department'].count()
+
+-------------------------------------------------------------------------------------
+#Find the number of workers by department who joined on or after April 1, 2014.
+#Output the department name along with the corresponding number of workers.
+#Sort the results based on the number of workers in descending order.
+
+worker['month'] = worker['joining_date'].dt.month
+worker['year'] = worker['joining_date'].dt.year
+
+result = worker[(worker['month'] > 3) & (worker['year'] > 2013)].groupby('department').agg(
+		num_workers = ('department', 'count')).reset_index().sort_values('num_workers', ascending = False)
+
+-------------------------------------------------------------------------------------
+#Find the details of each customer regardless of whether the customer made an order. 
+#Output the customer's first name, last name, and the city along with the order details.
+#Sort records based on the customer's first name and the order details in ascending order.
+
+result = customers.merge(orders.drop('id', axis = 1), left_on = 'id', right_on = 'cust_id', how = 'outer' ).sort_values(
+['first_name', 'order_details'])[['first_name', 'last_name', 'city', 'order_details']]
+
+-------------------------------------------------------------------------------------
+#Find order details made by Jill and Eva.
+#Consider the Jill and Eva as first names of customers.
+#Output the order date, details and cost along with the first name.
+
+#subetting customers to only Jill and Eva
+customers1 = customers[(customers['first_name'] == 'Jill') | (customers['first_name'] == 'Eva')]
+
+#getting rid of id in orders due to same name from customers but different data
+orders1 = orders.drop('id', axis = 1)
+
+result = customers1.merge(orders1, left_on = 'id', right_on = 'cust_id', how = 'left')[['first_name','order_date', 'order_details', 'total_order_cost']]
+
+result
+
+-------------------------------------------------------------------------------------
+#Compare each employee's salary with the average salary of the corresponding department.
+#Output the department, first name, and salary of employees along with the average salary of that department.
+
+average = employee.groupby('department').agg(
+    avg_salary = ('salary', 'mean')).reset_index()
+result = employee[['department', 'first_name', 'salary']].merge(average, left_on = 'department', right_on = 'department', how = 'left')
+
+-------------------------------------------------------------------------------------
+#Find libraries from the 2016 circulation year that have no email address provided but have their notice preference set to email. 
+#In your solution, output their home library code.
+result = library_usage[(library_usage['circulation_active_year'] == 2016) & 
+						(library_usage['notice_preference_definition'] == 'email') & 
+						(library_usage['provided_email_address'] == False)][['home_library_code']].drop_duplicates()
+						
+-------------------------------------------------------------------------------------					
+#Find how many times each artist appeared on the Spotify ranking list.
+#Output the artist name along with the corresponding number of occurrences.
+#Order records by the number of occurrences in descending order.
+
+result = spotify_worldwide_daily_song_ranking.groupby('artist').agg(
+    n_occurences = ('artist', 'count')).reset_index().sort_values('n_occurences', ascending = False)
+	
+~~~~~~~~~~~~~~~~~~~ OR ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+result = spotify_worldwide_daily_song_ranking.groupby('artist')['artist'].count().reset_index(
+						name = 'n_occurances').sort_values('n_occurances', ascending = False)
+
+-------------------------------------------------------------------------------------
+#Find all Lyft drivers who earn either equal to or less than 30k USD or equal to or more than 70k USD.
+
+result = lyft_drivers[(lyft_drivers['yearly_salary'] <= 30000 ) | (lyft_drivers['yearly_salary'] >= 70000)]
+
+-------------------------------------------------------------------------------------
+#Output share of US users that are active. Active users are the ones with an "open" status in the table fb_active_users.
+
+fb_active_users['flag'] = np.where(fb_active_users['status'] == 'open',1,0)
+
+result = fb_active_users[fb_active_users['country'] == 'USA'].groupby('country')['flag'].mean()
+
+~~~~~~~~~~~~~~~~~~~ OR ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+fb_active_users['flag'] = np.where(fb_active_users['status'] == 'open',1,0)
+
+result = fb_active_users[fb_active_users['country'] == 'USA'].groupby('country').agg(open = ('flag', 'mean'))
+
+
+-------------------------------------------------------------------------------------
+#The election is conducted in a city and everyone can vote for one or more candidates, 
+#or choose not to vote at all. Each person has 1 vote so if they vote for multiple candidates, 
+#their vote gets equally split across these candidates. For example, if a person votes for 2 candidates, 
+#these candidates receive an equivalent of 0.5 vote each. Some voters have chosen not to vote, which explains the blank entries in the dataset.
+
+#Find out who got the most votes and won the election. Output the name of the candidate or multiple names in case of a tie.
+
+#figuring out how many votes each person cast
+voting1 = voting_results[voting_results['candidate'].notnull()]
+df_weight = voting1.groupby('voter').agg(weight_pre = ('voter', 'count')).reset_index()
+
+#getting weight per voter
+df_weight['weight'] = 1/df_weight['weight_pre']
+
+#only keeping voter and their weight per vote, and merging onto original voting data
+df_weight = df_weight[['voter', 'weight']]
+results_pre = voting1.merge(df_weight, left_on = 'voter', right_on = 'voter', how = 'left')
+
+#two ways to do last step
+#results = results_pre.groupby('candidate')['weight'].sum().reset_index().nlargest(1,'weight')[['candidate']]
+results = results_pre.groupby('candidate').agg(total_vote = ('weight', 'sum')).reset_index().nlargest(1, 'total_vote')[['candidate']]
+
+-------------------------------------------------------------------------------------
+Which user flagged the most distinct videos that ended up approved by YouTube? 
+#Output, in one column, their full name or names in case of a tie. 
+#In the user's full name, include a space between the first and the last name.
+for some reason, nlargest(1) would not return the tie - still not sure why, maybe a bug
+
+flag_review1 = flag_review[flag_review['reviewed_outcome']== 'APPROVED']
+
+result = user_flags.merge(flag_review1, left_on = 'flag_id', right_on = 'flag_id', how = 'left').groupby(
+					['user_firstname', 'user_lastname'])['video_id'].nunique().reset_index().nlargest(2, 'video_id' )
+
+result['answer'] = result['user_firstname'] + " " + result['user_lastname']
+
+result1 = result['answer']
+-------------------------------------------------------------------------------------
+#Identify the IDs of students who scored exactly at the median for the SAT writing section.
+
+median = sat_scores['sat_writing'].median()
+
+result = sat_scores[sat_scores['sat_writing'] == median]['student_id']
+-------------------------------------------------------------------------------------
+#Find the top 10 ranked songs in 2010. Output the rank, group name, and song name, but do not show the same song twice. 
+#Sort the result based on the rank in ascending order.
+
+result = billboard_top_100_year_end[(billboard_top_100_year_end['year'] == 2010) & (
+		billboard_top_100_year_end['year_rank'] < 11)].drop_duplicates(
+		'song_name')[['year_rank', 'group_name', 'song_name']].sort_values('year_rank')
+-------------------------------------------------------------------------------------
+
+
+sf_restaurant_health_violations['business_type'] = sf_restaurant_health_violations['business_name'].apply(
+				lambda x: 'restaurant' if 'restaurant' in x.lower() else 
+                'cafe' if 'cafe'  in x.lower() or 'café' in x.lower() or 'coffee' in x.lower()
+                else 'school' if 'school' in x.lower()
+                else 'other')
+                
+result = sf_restaurant_health_violations[['business_name', 'business_type']].drop_duplicates('business_name')
+
+-------------------------------------------------------------------------------------
+#Find the processed rate of tickets for each type. The processed rate is defined as the number of 
+#processed tickets divided by the total number of tickets for that type. 
+#Round this result to two decimal places.
+
+facebook_complaints['flag'] = np.where(facebook_complaints['processed'] == True,1,0)
+
+result = facebook_complaints.groupby('type')['flag'].mean().reset_index()
+
+-------------------------------------------------------------------------------------
+#Make a report showing the number of survivors and non-survivors by passenger class. 
+
+titanic['first_class'] = np.where(titanic['pclass'] == 1,1,0)
+titanic['second_class'] = np.where(titanic['pclass'] == 2,1,0)
+titanic['third_class'] = np.where(titanic['pclass'] == 3,1,0)
+
+result = titanic.groupby('survived')[['first_class', 'second_class', 'third_class']].sum().reset_index()
+
+-------------------------------------------------------------------------------------
+#Identify the employee(s) working under manager manager_id=13 who have achieved the 
+#highest target. Return each such employee’s first name alongside the target value.
+
+#note - use single brackets for target to return a series and not in a dataframe
+max_val = salesforce_employees[salesforce_employees['manager_id'] == 13]['target'].max()
+
+result = salesforce_employees[(salesforce_employees['manager_id'] == 13) & (salesforce_employees['target'] == max_val)][['first_name', 'target']]
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------
+
+Dear Hiring Committee,
+
+Thank you for taking the time to consider my application. I am particularly interested in the Retail Data Analyst position at Ent Credit Union for two key reasons:
+
+With my experience in data analysis, statistical modeling, and performance optimization, I am confident in my ability to contribute valuable insights that drive operational efficiency and enhance member satisfaction. My background in SQL, Python, R, and data visualization tools like Tableau aligns well with the role’s requirements, and my commitment to learning ensures I can quickly adapt to new tools and processes.
+
+I am eager to expand my skill set in a data-driven financial services environment. Ent Credit Union’s mission to improve members’ financial well-being resonates with me, and I see this opportunity as a chance to apply my analytical expertise while growing professionally in a collaborative and impactful organization.
+
+I appreciate your time and consideration and look forward to the opportunity to discuss how my skills and interests align with the needs of Ent Credit Union.
+
+Best regards,
+
+Danny Ryan
