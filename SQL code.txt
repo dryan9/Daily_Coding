@@ -38,7 +38,9 @@ WHERE users.status = 'free'
 ----------------------------------------------------------------------------------
 /* Find the most profitable company from the financial sector. Output the result along with the continent. */
 
-SELECT company, continent
+SELECT 
+	company, 
+	continent
 FROM forbes_global_2010_2014
 WHERE profits = (SELECT
             MAX(profits) FROM forbes_global_2010_2014
@@ -47,18 +49,20 @@ WHERE profits = (SELECT
 /*You have been asked to find the 5 most lucrative products in terms of total revenue for the first half of 2022 
 (from January to June inclusive). Output their IDs and the total revenue. */
 
-select product_id, sum(cost_in_dollars * units_sold) as revenue
-from online_orders
-where 
+SELECT 
+	product_id, 
+	SUM(cost_in_dollars * units_sold) as revenue
+FROM online_orders
+WHERE 
     EXTRACT(YEAR from date) = '2022' AND
     EXTRACT(Month from date)  < 7
-group by product_id
-ORDER by revenue DESC
-limit 5
+GROUP BY product_id
+ORDER BY revenue DESC
+LIMIT 5
 ----------------------------------------------------------------------------------
 /*Classify each business as either a restaurant, cafe, school, or other. */
 
-select distinct business_name,
+select DISTINCT business_name,
     CASE WHEN
         lower(business_name) ' '%restaurant%' THEN 'restaurant'
     WHEN
@@ -113,44 +117,55 @@ SELECT
 /*Count the total number of violations that occurred at 'Roxanne Cafe' for each year,
  based on the inspection date. Output the year and the corresponding number of violations in ascending order of the year. */
 
-SELECT count(*), EXTRACT(YEAR from inspection_date) as year
+SELECT 
+	COUNT(*), 
+	EXTRACT(YEAR from inspection_date) as year
 FROM sf_restaurant_health_violations
 WHERE business_name LIKE '%Roxanne Cafe' 
     AND violation_id IS NOT NULL
-Group by business_name, EXTRACT(YEAR from inspection_date)
+GROUP BY business_name, EXTRACT(YEAR from inspection_date)
 ORDER BY EXTRACT(YEAR from inspection_date) 
 ----------------------------------------------------------------------------------
 /*Find the Olympics with the highest number of athletes. */
 
-SELECT count(distinct name) as athletes, games
+SELECT 
+	COUNT(distinct name) as athletes, 
+	games
 FROM olympics_athletes_events
 GROUP BY games
 ORDER BY athletes DESC
-limit 1
+LIMIT 1
 
 ~~~~~~~~~
 WITH RankedData as (
-    SELECT COUNT(distinct name) as athletes, games,
-    RANK() OVER (ORDER BY COUNT(distinct name) DESC ) as rank
+    SELECT 
+		COUNT(distinct name) as athletes, 
+		games,
+		RANK() OVER (ORDER BY COUNT(distinct name) DESC ) as rank
     FROM olympics_athletes_events
     GROUP BY games
 )
 
-SELECT games, athletes
-from RankedData
-where rank = 1;
+SELECT 
+	games, 
+	athletes
+FROM RankedData
+WHERE rank = 1;
 ----------------------------------------------------------------------------------
 SELECT 
     employee_id, 
     department_id, 
     COUNT(*) OVER (PARTITION BY department_id) AS dept_count
-FROM 
-    employees;
+FROM employees;
 ----------------------------------------------------------------------------------
 /* get name, age, department, salary, and average salary */
 
-SELECT Name, Age, Department, Salary, 
- AVG(Salary) OVER( PARTITION BY Department) AS Avg_Salary
+SELECT 
+	Name, 
+	Age, 
+	Department, 
+	Salary, 
+    AVG(Salary) OVER( PARTITION BY Department) AS Avg_Salary
  FROM employee
 ----------------------------------------------------------------------------------
 /*Find the processed rate of tickets for each type. The processed rate is defined as 
@@ -165,7 +180,10 @@ GROUP BY type;
 ----------------------------------------------------------------------------------
 /* simplified version of a CTE */
 WITH TopSalaries AS (
-    SELECT employee_id, name, salary
+    SELECT 
+		employee_id, 
+		name, 
+		salary
     FROM employees
     WHERE salary > 100000
 )
@@ -175,7 +193,9 @@ SELECT * FROM TopSalaries;
 /8Find the customer who has placed the highest number of orders. 
 Output the id of the customer along with the corresponding number of orders. */
 
-SELECT o.cust_id, count(*)
+SELECT 
+	o.cust_id, 
+	COUNT(*)
 FROM orders as o
 
 LEFT JOIN
@@ -187,15 +207,20 @@ ORDER BY COUNT(*) DESC
 LIMIT 1
 
 ~~~~~~~~~~~~~~ using CTE and a subquery ~~~~~~~~~~~~~~~~~~~~~
-WITH cte as (SELECT o.cust_id, count(*) as num
-FROM orders as o
-LEFT JOIN
-customers as c
-ON c.id = o.cust_id
-GROUP BY o.cust_id
-)
+WITH cte as 
+	(SELECT 
+		o.cust_id, 
+		COUNT(*) as num
+	FROM orders as o
+	LEFT JOIN
+	customers as c
+	ON c.id = o.cust_id
+	GROUP BY o.cust_id
+	)
 
-SELECT cust_id, num
+SELECT 
+	cust_id, 
+	num
 FROM CTE
 WHERE num = (SELECT MAX(num) from CTE)
 ----------------------------------------------------------------------------------
@@ -203,12 +228,17 @@ WHERE num = (SELECT MAX(num) from CTE)
  We'll consider the top 5 percentile of claims with the highest fraud scores in each state as potentially fraudulent. */
 
 WITH percentile as(
-SELECT state,
-PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fraud_score) AS percentile_95
-FROM fraud_score 
-GROUP BY state)
+	SELECT 
+		state,
+		PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY fraud_score) AS percentile_95
+	FROM fraud_score 
+	GROUP BY state)
 
-SELECT f.policy_num, f.state, f.claim_cost, f.fraud_score
+SELECT 
+	f.policy_num, 
+	f.state, 
+	f.claim_cost, 
+	f.fraud_score
 FROM fraud_score as f
 LEFT JOIN
 percentile as p
@@ -218,25 +248,31 @@ WHERE f.fraud_score >= p.percentile_95
 /*Calculate the total revenue from each customer in March 2019. Include only customers who were active in March 2019.
 Output the revenue along with the customer id and sort the results based on the revenue in descending order. */
 
-SELECT cust_id, SUM(total_order_cost) as total_revenue
+SELECT 
+	cust_id, 
+	SUM(total_order_cost) as total_revenue
 FROM orders
-where EXTRACT(MONTH from order_date) = 3 AND
+WHERE EXTRACT(MONTH from order_date) = 3 AND
       EXTRACT(YEAR from order_date) = 2019
-Group By cust_id
+GROUP BY cust_id
 ORDER BY total_revenue DESC
 
 
 ~~~~~~~~~~ USING CTE ~~~~~~~~~~~~~~~~
 
 WITH cte as (
-SELECT cust_id, SUM(total_order_cost) as total_revenue, 
+	SELECT 
+		cust_id, 
+		SUM(total_order_cost) as total_revenue, 
         EXTRACT(MONTH from order_date) as month,
         EXTRACT(YEAR from order_date) as year
-FROM orders
-GROUP BY cust_id, year, month
+	FROM orders
+	GROUP BY cust_id, year, month
 )
 
-SELECT cust_id, total_revenue
+SELECT 
+	cust_id, 
+	total_revenue
 FROM cte
 WHERE month = 3 AND year = 2019
 ORDER BY total_revenue DESC
@@ -245,16 +281,21 @@ ORDER BY total_revenue DESC
 ~~~~~~~~~~ USING HAVING ~~~~~~~~~~~~~
 /*have to also use a CTE with having as need the month and year in the group by, so they must also be in the select
 
-WITH cte1 as(select cust_id, SUM(total_order_cost) as total_revenue, 
-        EXTRACT(MONTH from order_date) as month,
-        EXTRACT(YEAR from order_date) as year
-from orders
-Group By cust_id, year, month
-HAVING EXTRACT(YEAR from order_date) = 2019 and 
-        EXTRACT(MONTH from order_date) = 3
-ORDER BY total_revenue DESC)
+WITH cte1 as(
+		SELECT 
+			cust_id, 
+			SUM(total_order_cost) as total_revenue, 
+			EXTRACT(MONTH from order_date) as month,
+			EXTRACT(YEAR from order_date) as year
+		FROM orders
+		GROUP BY cust_id, year, month
+		HAVING EXTRACT(YEAR from order_date) = 2019 AND 
+				EXTRACT(MONTH from order_date) = 3
+		ORDER BY total_revenue DESC)
 
-SELECT cust_id, total_revenue
+SELECT 
+	cust_id, 
+	total_revenue
 FROM cte1
 ----------------------------------------------------------------------------------
 /*Find order details made by Jill and Eva.
@@ -262,23 +303,30 @@ Consider the Jill and Eva as first names of customers.
 Output the order date, details and cost along with the first name.
 Order records based on the customer id in ascending order */
 
-SELECT o.order_date, o.order_details, o.total_order_cost,
-        c.first_name
+SELECT 
+	o.order_date, 
+	o.order_details, 
+	o.total_order_cost,
+     c.first_name
 FROM customers as c 
 JOIN
 Orders as o
 ON c.id = o.cust_id
-where c.first_name like '%Eva%' OR
+WHERE c.first_name like '%Eva%' OR
       c.first_name like '%Jill%'
 ORDER BY o.cust_id ASC
 
 
 ~~~~~~~~~~~ using a subquery with the inner join to only pull in rows with the correct names ~~~~~~~~~~~~~~~~~~~
 
-SELECT first_name, order_date, order_details, total_order_cost
+SELECT 
+	first_name, 
+	order_date, 
+	order_details, 
+	total_order_cost
 FROM orders
 INNER JOIN (select *
-            from customers
+            FROM customers
             WHERE first_name IN ('Jill', 'Eva')) AS c
 ON c.id = orders.cust_id
 ORDER BY cust_id 
@@ -287,7 +335,9 @@ ORDER BY cust_id
 Consider an order is shipable if the customer's address is known. */
 
 WITH cte as (
-    SELECT c.address, c.id
+    SELECT 
+		c.address, 
+		c.id
     FROM orders as o
     JOIN
     customers as C
@@ -309,14 +359,18 @@ FROM orders;
 identified using the combination of their first name and last name. 
 Do not consider rows in which there is no flag ID. */
 
-SELECT video_id, COUNT(DISTINCT CONCAT(user_firstname, user_lastname))
+SELECT 
+	video_id, 
+	COUNT(DISTINCT CONCAT(user_firstname, user_lastname))
 FROM user_flags
 WHERE flag_id IS NOT NULL 
 GROUP BY video_id
 
 ----------------------------------------------------------------------------------
 WITH cte AS (
-    SELECT id, PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY sat_writing) as percentile
+    SELECT 
+		id, 
+		PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY sat_writing) as percentile
     FROM sat_scores
 )
 
@@ -326,7 +380,9 @@ FROM CTE
 #Write a query to identify supervisors who have at least five direct reports.
 
 WITH CTE as (
-  SELECT supervisorid, COUNT(supervisorid) as count_supervisor
+  SELECT 
+	supervisorid, 
+	COUNT(supervisorid) as count_supervisor
   FROM TeamMember
   GROUP BY supervisorid
   HAVING COUNT(supervisorid) > 4
@@ -341,9 +397,11 @@ ON c.supervisorid = t.member_id
 #Find the average number of bathrooms and bedrooms for each city’s property types. 
 #Output the result along with the city name and the property type.
 
-SELECT city, property_type, 
-        AVG(bathrooms) as n_bathrooms_avg, 
-        AVG(bedrooms) as n_bedrooms_avg
+SELECT 
+	city, 
+	property_type, 
+    AVG(bathrooms) as n_bathrooms_avg, 
+    AVG(bedrooms) as n_bedrooms_avg
 FROM airbnb_search_details
 GROUP BY city, property_type
 ----------------------------------------------------------------------------------
@@ -358,7 +416,11 @@ WHERE department = 'Admin' and
 #Output the customer's first name, last name, and the city along with the order details.
 #Sort records based on the customer's first name and the order details in ascending order.
 
-select c.first_name, c.last_name, c.city, o.order_details
+select 
+	c.first_name, 
+	c.last_name, 
+	c.city, 
+	o.order_details
 FROM customers as c
 
 LEFT JOIN
@@ -370,7 +432,10 @@ ON c.id = o.cust_id
 #Output the hotel name ('Hotel Arena'), each review score, 
 #and the number of reviews for that score. Ensure the results only include 'Hotel Arena.'
 
-SELECT hotel_name,  reviewer_score, count(reviewer_score)
+SELECT 
+	hotel_name,  
+	reviewer_score, 
+	COUNT(reviewer_score)
 FROM hotel_reviews
 WHERE hotel_name = 'Hotel Arena'
 GROUP BY hotel_name, reviewer_score
@@ -378,14 +443,20 @@ GROUP BY hotel_name, reviewer_score
 #Find all Lyft drivers who earn either equal to or less than 30k USD or equal to or more than 70k USD.
 #Output all details related to retrieved records.
 
-SELECT index, start_date, end_date, yearly_salary 
+SELECT 
+	index, 
+	start_date, 
+	end_date, 
+	yearly_salary 
 FROM lyft_drivers
 WHERE yearly_salary <= 30000 OR yearly_salary >= 70000
 ----------------------------------------------------------------------------------
 #Find the base pay for Police Captains.
 #Output the employee name along with the corresponding base pay.
 
-SELECT employeename, basepay
+SELECT 
+	employeename, 
+	basepay
 FROM sf_public_salaries
 where jobtitle like '%CAPTAIN%'
 ----------------------------------------------------------------------------------
@@ -393,7 +464,9 @@ where jobtitle like '%CAPTAIN%'
 #Output the result along with the event name.
 #Sort the result based on the event count in the descending order.
 
-SELECT event_name, count(event_name) as event_count
+SELECT 
+	event_name, 
+	COUNT(event_name) as event_count
 FROM playbook_events
 WHERE device like '%macbook pro%'
 GROUP BY event_name
@@ -402,7 +475,10 @@ ORDER BY event_count DESC
 #Find the top 10 ranked songs in 2010. Output the rank, group name, and song name, 
 #but do not show the same song twice. Sort the result based on the rank in ascending order.
 
-SELECT year_rank, group_name, song_name
+SELECT 
+	year_rank, 
+	group_name, 
+	song_name
 FROM billboard_top_100_year_end
 WHERE year_rank < 11 AND year = 2010
 group by year_rank, group_name, song_name
@@ -434,7 +510,12 @@ WHERE flag = (SELECT MAX(flag)
 #each year. Output their id, first name, last name, department ID, and current salary. 
 #Order your list by employee ID in ascending order.
 
-SELECT id, first_name, last_name, department_id, MAX(salary) 
+SELECT 
+	id, 
+	first_name, 
+	last_name, 
+	department_id, 
+	MAX(salary) 
 FROM  ms_employee_salary
 GROUP BY id, first_name, last_name, department_id
 ORDER BY id ASC
@@ -444,7 +525,9 @@ ORDER BY id ASC
 #for the first half of 2022 (from January to June inclusive).
 #Output their IDs and the total revenue.
 
-SELECT product_id, SUM(cost_in_dollars * units_sold) as revenue
+SELECT 
+	product_id, 
+	SUM(cost_in_dollars * units_sold) as revenue
 FROM online_orders
 WHERE EXTRACT(MONTH from date_sold) < 7 AND
       EXTRACT(YEAR from date_sold) = 2022
@@ -453,17 +536,17 @@ ORDER BY revenue DESC
 LIMIT 5
 ----------------------------------------------------------------------------------
 WITH cte AS (
-  SELECT product_id,
-         SUM(cost_in_dollars * units_sold) AS revenue,
-         RANK() OVER (
-           ORDER BY SUM(cost_in_dollars * units_sold) DESC
-         ) AS rnk
+  SELECT 
+	product_id,
+    SUM(cost_in_dollars * units_sold) AS revenue,
+    RANK() OVER (ORDER BY SUM(cost_in_dollars * units_sold) DESC) AS rnk
   FROM online_orders
   WHERE EXTRACT(MONTH FROM date_sold) BETWEEN 1 AND 6
   GROUP BY product_id
 )
-SELECT product_id,
-       revenue
+SELECT 
+	product_id,
+    revenue
 FROM cte
 WHERE rnk <= 5;
 ----------------------------------------------------------------------------------
@@ -471,13 +554,17 @@ WHERE rnk <= 5;
 #Output the id of the customer along with the corresponding number of orders.
 
 WITH CTE as (
-    SELECT cust_id, COUNT(*),
+    SELECT 
+		cust_id, 
+		COUNT(*),
     RANK() OVER( ORDER BY COUNT(*) DESC) as rnk
     FROM orders
     GROUP BY cust_id
 )
 
-SELECT cust_id as id, count as total_orders
+SELECT 
+	cust_id as id, 
+	count as total_orders
 FROM CTE
 where rnk = 1
 ----------------------------------------------------------------------------------
@@ -493,8 +580,9 @@ GROUP BY survived
 #Find the second highest salary of employees.
 
 WITH CTE as (
-    SELECT salary,
-    RANK() OVER(ORDER BY salary DESC) as rnk
+    SELECT 
+		salary,
+		RANK() OVER(ORDER BY salary DESC) as rnk
     FROM employee
 )
 
@@ -504,8 +592,7 @@ WHERE rnk = 2
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ If you want the second row
 
-select 
-    salary
+select salary
 from employee
 order by salary DESC
 limit 1 offset 1;
@@ -515,7 +602,10 @@ limit 1 offset 1;
 #Output the employee's first name along with the corresponding salary.
 
 WITH CTE as(
-    SELECT e.first_name, e.salary as emp_sal, manager.salary as man_salary
+    SELECT 
+		e.first_name, 
+		e.salary as emp_sal, 
+		manager.salary as man_salary
     FROM employee as e
     
     LEFT JOIN
@@ -523,7 +613,9 @@ WITH CTE as(
     ON e.manager_id = manager.id
     )
     
-SELECT first_name, emp_sal as salary
+SELECT 
+	first_name, 
+	emp_sal as salary
 FROM CTE
 WHERE emp_sal > man_salary
 ----------------------------------------------------------------------------------
@@ -531,19 +623,27 @@ WHERE emp_sal > man_salary
 #Output the department name, employee's first name along with the corresponding salary.
 
 WITH CTE as (
-    SELECT department, first_name, salary,
+    SELECT 
+		department, 
+		first_name, 
+		salary,
     RANK() OVER(PARTITION BY department ORDER BY salary DESC) as rnk
     from employee
 )
 
-SELECT department, first_name, salary
+SELECT 
+	department, 
+	first_name, 
+	salary
 FROM CTE
 WHERE rnk = 1
 ----------------------------------------------------------------------------------
 #Identify the employee(s) working under manager manager_id=13 who have achieved the 
 #highest target. Return each such employee’s first name alongside the target value.
 
-SELECT first_name, target
+SELECT 
+	first_name, 
+	target
 FROM salesforce_employees
 WHERE manager_id = 13 and target = (
     SELECT MAX(target)
@@ -558,8 +658,10 @@ WHERE manager_id = 13 and target = (
 #	Then, sort users with the same number of emails in alphabetical order by their username.
 #	In your rankings, return a unique value (i.e., a unique rank) even if multiple users have the same number of emails.
 
-SELECT from_user, COUNT(*),
-        RANK() OVER (ORDER BY COUNT(*) DESC,from_user) as row_number
+SELECT 
+	from_user, 
+	COUNT(*),
+    RANK() OVER (ORDER BY COUNT(*) DESC,from_user) as row_number
         FROM google_gmail_emails
         GROUP BY from_user
 ----------------------------------------------------------------------------------
@@ -580,7 +682,9 @@ WHERE w.salary = (
 ~~~~~~~ using a window function ~~~~~~~~~~~	
 
 WITH CTE as (
-    SELECT worker_id, worker_title,
+    SELECT 
+		worker_id, 
+		worker_title,
     DENSE_RANK() OVER(ORDER BY salary DESC) as rnk
     FROM worker as w
     LEFT JOIN
@@ -593,15 +697,19 @@ FROM CTE
 WHERE rnk = 1
 ----------------------------------------------------------------------------------
 WITH page_load AS (
-    SELECT user_id,  MIN(timestamp) as start1, 
-            EXTRACT(DAY FROM timestamp) as day
+    SELECT 
+		user_id,  
+		MIN(timestamp) as start1, 
+        EXTRACT(DAY FROM timestamp) as day
     FROM facebook_web_log
     WHERE action like '%page_load%'
     GROUP BY user_id, EXTRACT(DAY FROM timestamp)
 ),
 page_exit AS (
-    SELECT user_id, MAX(timestamp) as end1, 
-            EXTRACT(DAY FROM timestamp) as day
+    SELECT 
+		user_id, 
+		MAX(timestamp) as end1, 
+        EXTRACT(DAY FROM timestamp) as day
     FROM facebook_web_log
     WHERE action like '%page_exit%'
     GROUP BY user_id, EXTRACT(DAY FROM timestamp)
@@ -614,7 +722,9 @@ ON load.user_id = exit.user_id AND
    load.day = exit.day
  )
  
-SELECT user_id, AVG(end1 - start1) as duration
+SELECT 
+	user_id, 
+	AVG(end1 - start1) as duration
 FROM joined
 GROUP BY user_id
 ----------------------------------------------------------------------------------
@@ -624,8 +734,11 @@ GROUP BY user_id
 
 ~~~~~~~~~~~~~ using a CTE and then subquery ~~~~~~~~~~~~~~~~~~
 WITH CTE as(
-SELECT c.first_name, o.order_date, SUM(total_order_cost) as max_cost
-FROM customers as c
+	SELECT 
+		c.first_name, 
+		o.order_date, 
+		SUM(total_order_cost) as max_cost
+	FROM customers as c
 
 LEFT JOIN
 orders AS o
@@ -636,16 +749,22 @@ WHERE EXTRACT(MONTH FROM o.order_date) < 6 AND
 GROUP BY c.first_name, o.order_date
 )
 
-SELECT first_name, order_date, max_cost
+SELECT 
+	first_name, 
+	order_date, 
+	max_cost
 FROM CTE
 WHERE max_cost = (SELECT MAX(max_cost)
                   FROM CTE)
 				  
 ~~~~~~~~~~~~~~~~~~ using window function ~~~~~~~~~~~~~
 WITH CTE as(
-SELECT c.first_name, o.order_date, SUM(total_order_cost) as max_cost,
-RANK() OVER(ORDER BY SUM(total_order_cost) DESC) as rnk
-FROM customers as c
+	SELECT 
+		c.first_name, 
+		o.order_date, 
+		SUM(total_order_cost) as max_cost,
+		RANK() OVER(ORDER BY SUM(total_order_cost) DESC) as rnk
+	FROM customers as c
 
 LEFT JOIN
 orders AS o
@@ -656,29 +775,239 @@ WHERE EXTRACT(MONTH FROM o.order_date) < 6 AND
 GROUP BY c.first_name, o.order_date
 )
 
-SELECT first_name, order_date, max_cost
+SELECT 
+	first_name, 
+	order_date, 
+	max_cost
 FROM CTE
 WHERE rnk = 1
 
 ----------------------------------------------------------------------------------
+#Calculate the net change in the number of products launched by companies in 2020 compared to 2019. 
+#Your output should include the company names and the net difference.
+#(Net difference = Number of products launched in 2020 - The number launched in 2019.)
 
+WITH d_2019 AS (SELECT company_name, COUNT(DISTINCT product_name) as   count_one
+                FROM car_launches
+                WHERE year = 2019
+                GROUP BY company_name),
+     d_2020 AS (SELECT company_name, COUNT(DISTINCT product_name) as count_two
+                FROM car_launches
+                WHERE year = 2020
+                GROUP BY company_name),
+     joined AS(SELECT one.company_name, (two.count_two- one.count_one) as net_products
+                FROM d_2019 as one
+                INNER JOIN
+                d_2020 as two
+                ON one.company_name = two.company_name)
+                
+SELECT company_name, net_products
+FROM joined
 ----------------------------------------------------------------------------------
+#Find songs that have ranked in the top position. Output the track name and the number of times it ranked at the top. 
+#Sort your records by the number of times the song was in the top position in descending order.
 
+SELECT 
+	trackname, 
+	COUNT(*) as times_top1
+FROM spotify_worldwide_daily_song_ranking
+WHERE position = 1
+GROUP BY trackname
+ORDER BY count(*) DESC
+
+---------------------------------------------------------------------------------- 
+WITH CTE AS (
+SELECT 
+	pe.device, 
+	pu.language,
+    DISTINCT CASE WHEN pe.device like '%macbook pro%' OR
+              pe.device like '%iphone 5s%' OR
+              pe.device like '%ipad air%' 
+              THEN 'apple'
+              ELSE 'not'
+              END as company
+FROM playbook_events as pe
+LEFT JOIN 
+playbook_users as pu
+ON pe.user_id = pu.user_id
+),
+apple_counts AS (
+    SELECT 
+		language, 
+		COUNT(*) as n_apple_users
+    FROM CTE
+    WHERE company like '%apple%'
+    GROUP BY language),
+total_counts AS (
+    SELECT 
+		language, 
+		COUNT(*) as n_total_users
+    FROM CTE
+    GROUP BY language),
+joined AS (
+    SELECT 
+		t.language, 
+		a.n_apple_users, 
+		t.n_total_users
+    FROM apple_counts as a
+    JOIN
+    total_counts as t
+    ON a.language = t.language )
+
+SELECT *
+FROM joined
+ORDER BY n_total_users desc
 ----------------------------------------------------------------------------------
-
+#We have data on rental properties and their owners. Write a query that figures out 
+#how many different apartments (use unit_id) are owned by people under 30, broken down 
+#by their nationality. We want to see which nationality owns the most apartments, 
+#so make sure to sort the results accordingly.
 ----------------------------------------------------------------------------------
+#Find the average total compensation based on employee titles and gender. 
+#Total compensation is calculated by adding both the salary and bonus of each employee. 
+#However, not every employee receives a bonus so disregard employees without bonuses in your calculation. 
+#Employee can receive more than one bonus.
+#Output the employee title, gender (i.e., sex), along with the average total compensation.
 
+WITH bonus AS (
+    SELECT 
+		worker_ref_id, 
+		SUM(bonus) as bonus_total
+    FROM sf_bonus
+    GROUP BY worker_ref_id
+),
+merged_salary AS (
+    SELECT b.worker_ref_id, 
+	e.employee_title, 
+	e.sex, 
+	(e.salary + b.bonus_total) as total_salary
+    FROM bonus as b
+    LEFT JOIN sf_employee as e
+    on b.worker_ref_id = e.id
+)
+
+SELECT 
+	employee_title, 
+	sex, AVG(total_salary) as avg_compensation
+FROM merged_salary
+GROUP BY employee_title, sex
 ----------------------------------------------------------------------------------
+#Find the email activity rank for each user. Email activity rank is defined by the total number of emails sent. 
+#The user with the highest number of emails sent will have a rank of 1, and so on. Output the user, total emails, and their activity rank.
+#	Order records first by the total emails in descending order.
+#	Then, sort users with the same number of emails in alphabetical order by their username.
+#	In your rankings, return a unique value (i.e., a unique rank) even if multiple users have the same number of emails.
 
+SELECT 
+	from_user, 
+	COUNT(*)  total_emails,
+    ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, from_user) as row_number
+FROM google_gmail_emails
+GROUP BY from_user
+ORDER BY total_emails DESC
 ----------------------------------------------------------------------------------
+#Compare each employee's salary with the average salary of the corresponding department.
+#Output the department, first name, and salary of employees along with the average salary of that department.
 
+WITH CTE as (
+    SELECT 
+		department, 
+		AVG(salary) as avg_salary
+    FROM employee
+    GROUP BY department)
+    
+SELECT 
+	e.department, 
+	e.first_name, 
+	e.salary, 
+	c.avg_salary
+FROM employee as e
+
+LEFT JOIN 
+CTE as c
+ON e.department = c.department
 ----------------------------------------------------------------------------------
+#Find libraries from the 2016 circulation year that have no email address provided but
+# have their notice preference set to email. In your solution, output their home library code.
 
+SELECT DISTINCT home_library_code
+FROM library_usage
+WHERE circulation_active_year = 2016 AND 
+      notice_preference_definition = 'email' AND
+      provided_email_address = FALSE
 ----------------------------------------------------------------------------------
+Meta/Facebook has developed a new programing language called Hack.To measure the popularity of 
+#Hack they ran a survey with their employees. The survey included data on previous programing familiarity 
+#as well as the number of years of experience, age, gender and most importantly satisfaction with Hack. 
+#Due to an error location data was not collected, but your supervisor demands a report showing average popularity of 
+#Hack by office location. Luckily the user IDs of employees completing the surveys were stored.
+#Based on the above, find the average popularity of the Hack per office location.
+Output the location along with the average popularity.
 
+SELECT 
+	emp.location, 
+	AVG(surv.popularity) as avg_popularity
+FROM facebook_employees as emp
+
+LEFT JOIN
+facebook_hack_survey as surv
+on emp.ID = surv.employee_id
+
+GROUP BY emp.location
 ----------------------------------------------------------------------------------
+#Find all posts which were reacted to with a heart. 
+#For such posts output all columns from facebook_posts table.
+
+SELECT DISTINCT p.*
+
+FROM facebook_posts as p
+
+JOIN facebook_reactions as r
+ON p.post_id = r.post_id
+
+WHERE r.reaction = 'heart'
+----------------------------------------------------------------------------------
+#Write a query that returns the number of unique users per client per month.
+
+SELECT 
+	   client_id, 
+       EXTRACT(MONTH from time_id) as month, 
+       COUNT(distinct user_id) as users_num
+FROM fact_events
+GROUP BY client_id, 
+         EXTRACT(MONTH from time_id)
+----------------------------------------------------------------------------------
+#You have been asked to find the 5 most lucrative products (including ties) in terms of total revenue for the first half of 2022 (from January to June inclusive).
 
 
+#Output their IDs and the total revenue. There may be more than 5 rows in the output since you are including ties.
+
+WITH CTE as(
+    SELECT 
+		   product_id, 
+           SUM(units_sold*cost_in_dollars) as revenue,
+           RANK() OVER(ORDER BY sum(units_sold*cost_in_dollars) desc) as rnk
+    FROM online_orders
+    GROUP BY product_id
+)
+
+SELECT 
+	   product_id, 
+       revenue
+FROM CTE
+WHERE rnk <=5
+ORDER BY rnk asc
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 mySQL and postgress exeprience
 schema is a group of tables
@@ -692,6 +1021,8 @@ Postgres:
 4) use database connector to export the dataframe from python to Postgres
 5) use python to connect to the database, and then you can read data from the database
 ----------------------------------------------------------------------------------
+
+
 
 ----------------------------------------------------------------------------------
 
