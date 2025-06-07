@@ -273,7 +273,7 @@ result = sf_restaurant_health_violations[['business_name', 'business_type']].dro
 
 facebook_complaints['flag'] = np.where(facebook_complaints['processed'] == True,1,0)
 
-result = facebook_complaints.groupby('type')['flag'].mean().reset_index()
+result = facebook_complaints.groupby('type')['processed'].mean().round(2).reset_index()
 
 -------------------------------------------------------------------------------------
 #Make a report showing the number of survivors and non-survivors by passenger class. 
@@ -294,13 +294,45 @@ max_val = salesforce_employees[salesforce_employees['manager_id'] == 13]['target
 result = salesforce_employees[(salesforce_employees['manager_id'] == 13) & (salesforce_employees['target'] == max_val)][['first_name', 'target']]
 
 -------------------------------------------------------------------------------------
+#For each video, find how many unique users flagged it. A unique user can 
+#be identified using the combination of their first name and last name. 
+#Do not consider rows in which there is no flag ID.
 
+user_flags1 = user_flags[user_flags['flag_id'].notnull()]
 
+user_flags1['username'] = user_flags1['user_firstname'].astype(str) +  user_flags1['user_lastname'].astype(str)
+
+result = user_flags1.groupby('video_id')['username'].nunique().reset_index()
 -------------------------------------------------------------------------------------
+#Calculate the net change in the number of products launched by companies in 2020 compared to 2019. 
+#Your output should include the company names and the net difference.
+#(Net difference = Number of products launched in 2020 - The number launched in 2019.)
 
+#2019 laumches per car
+d_2019 = car_launches[car_launches['year'] == 2019].groupby('company_name')['product_name'].nunique().reset_index()
+#2020 launches per car
+d_2020 = car_launches[car_launches['year'] == 2020].groupby('company_name')['product_name'].nunique().reset_index()
 
+#re-naming columns to prepare to merge
+d_2019.rename(columns={'product_name': 'launches_2019'}, inplace=True)
+d_2020.rename(columns = {'product_name': 'launches_2020'}, inplace = True)
+
+#merging data, and filling NA with 0 in case company did not produce in a certain year
+result = d_2019.merge(d_2020, on = 'company_name', how = 'outer').fillna(0)
+
+#calculating net difference
+result['net_new_products'] = result['launches_2020'] -  result['launches_2019']
+
+#selecting final columns
+result1 = result[['company_name', 'net_new_products' ]]
+
+result1
 -------------------------------------------------------------------------------------
+##Find songs that have ranked in the top position. Output the track name and the number of times it ranked at the top. 
+#Sort your records by the number of times the song was in the top position in descending order.
 
+result = spotify_worldwide_daily_song_ranking[spotify_worldwide_daily_song_ranking['position'] == 1].
+				groupby('trackname').size().reset_index(name = 'times_top1').sort_values('times_top1', ascending = False)
 
 -------------------------------------------------------------------------------------
 
